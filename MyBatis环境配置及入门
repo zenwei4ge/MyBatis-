@@ -6,4 +6,159 @@ MyBatis简介
             SqlSessionFactoryBuilder可以从一个xml配置文件或者一个预定义的配置类的实例获得
             用xml文件构建SqlSessionFactory实例是非常简单的事情。推荐在这个配置中使用类路径资源（classpath resource)
              MyBatis 最强大的特性之一就是它的动态语句功能
-             
+整个过程
+            1. 在本教程中，建立 java 工程，但一般都是开发 web 项目，这个系列教程最后是 web，但这里为了方便学习，本教程前面建立的都是 java 工程。
+            2. 将 mybatis-3.2.3.jar，mysql-connector-java-5.1.25-bin.jar 创建两个用户自定库（User Libary）：mysql-connector 和 mybatis；
+            3. 创建 mysql 测试数据库和用户表, 注意，数据库使用的是 utf-8 编码。以解决不必要的中文乱码问题
+一、创建 Java 工程
+            在 mybatis-start 项目中加入两个所需的程序库：mysql-connector 和 mybatis
+            右键点击 "mybatis-start" 项目，从弹出的菜单中选择： "Build Path" -> "Add Libaries..." 
+二、创建数据库和 User 表
+            要创建的数据库是：yiibai，并在 yiibai 数据库创建一个表：user,使用 utf-8 编码
+            CREATE TABLE `user` (
+              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+              `name` varchar(64) NOT NULL DEFAULT '',
+              `dept` varchar(254) NOT NULL DEFAULT '',
+              `website` varchar(254) DEFAULT '',
+              `phone` varchar(16) NOT NULL DEFAULT '',
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+
+            -- ----------------------------
+            -- Records of user
+            -- ----------------------------
+            INSERT INTO `user` VALUES ('1', 'yiibai', 'Tech', 'http://www.yiibai.com', '13800009988');
+三、创建 Mybatis 配置文件
+           mybatis 配置文件: Configure.xml, 在 src/config 目录下建立此文件
+           <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+            "http://mybatis.org/dtd/mybatis-3-config.dtd">
+            <configuration>
+                        <typeAliases>
+                                    <typeAlias alias="User" type="com.yiibai.mybatis.models.User" />
+                        </typeAliases>
+                        <environments default="development">
+                            <environment id="development">
+                                    <transactionManager type="JDBC" />
+                                                <dataSource type="POOLED">  
+                                        <property name="driver" value="com.mysql.jdbc.Driver" />
+                                                    <property name="url" value="jdbc:mysql://127.0.0.1:3306/yiibai" />
+                                                    <property name="username" value="root" />
+                                                    <property name="password" value="" />
+                                   </dataSource>
+                                    </environment>
+                        </environments>
+
+                        <mappers>
+                             <!-- // power by http://www.yiibai.com -->
+                             <mapper resource="com/yiibai/mybatis/models/User.xml" />
+                        </mappers>
+            </configuration>
+四、创建实体类和映射文件
+                       创建一个包：com.yiibai.mybatis.models
+                       创建与数据库表对应的 User.java 类及其映射文件：User.xml
+                       package com.yiibai.mybatis.models;
+
+                        public class User {
+                                    private int id;
+                                    private String name;
+                                    private String dept;
+                                    private String phone;
+                                    private String website;
+
+                                    public String getWebsite() {
+                                                return website;
+                                    }
+                                    public void setWebsite(String website) {
+                                                this.website = website;
+                                    }
+                                    public int getId() {
+                                                return id;
+                                    }
+                                    public void setId(int id) {
+                                                this.id = id;
+                                    }
+                                    public String getName() {
+                                                return name;
+                                    }
+                                    public void setName(String name) {
+                                                this.name = name;
+                                    }
+                                    public String getDept() {
+                                                return dept;
+                                    }
+                                    public void setDept(String dept) {
+                                                this.dept = dept;
+                                    }
+                                    public String getPhone() {
+                                                return phone;
+                                    }
+                                    public void setPhone(String phone) {
+                                                this.phone = phone;
+                                    }
+
+                        }
+                        映射文件 User.xml
+                        
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+                        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+                        <mapper namespace="com.yiibai.mybatis.models.UserMapper">
+                                    <select id="GetUserByID" parameterType="int" resultType="User">
+                                                select * from `user` where id = #{id}
+                            </select>
+                        </mapper>
+五、运行程序测试结果
+                       在 src 源码目录下建立 一个类叫作：HelloWord, 来运行测试配置环境
+                       import java.io.Reader;
+
+                        import org.apache.ibatis.io.Resources;
+                        import org.apache.ibatis.session.SqlSession;
+                        import org.apache.ibatis.session.SqlSessionFactory;
+                        import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+                        import com.yiibai.mybatis.models.*;
+
+                        /**
+                         * 
+                         * @author yiibai
+                         * @copyright http://www.yiibai.com
+                         * @date 2015/09/22
+                         */
+                        public class HelloWord {
+                                    private static SqlSessionFactory sqlSessionFactory;
+                                    private static Reader reader;
+
+                                    static {
+                                                try {
+                                                            reader = Resources.getResourceAsReader("config/Configure.xml");
+                                                            sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+                                                } catch (Exception e) {
+                                                            e.printStackTrace();
+                                                }
+                                    }
+                                    public static SqlSessionFactory getSession() {
+                                                return sqlSessionFactory;
+                                    }
+                                    /**
+                                     * @param args
+                                     */
+                                    public static void main(String[] args) {
+                                                // TODO Auto-generated method stub
+                                                SqlSession session = sqlSessionFactory.openSession();
+                                                try {
+                                                            User user = (User) session.selectOne(
+                                                                                    "com.yiibai.mybatis.models.UserMapper.GetUserByID",                                                         1);
+                                                            if(user!=null){
+                                                                        String userInfo = "名字："+user.getName()+", 所属部               
+                                                                    门："+user.getDept()+", 主页："+user.getWebsite();
+                                                                        System.out.println(userInfo);
+                                                            }
+                                                } finally {
+                                                            session.close();
+                                                }
+                                    }
+
+                        }
+
