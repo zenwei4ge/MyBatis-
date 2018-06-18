@@ -1,0 +1,128 @@
+用SqlSession 实例来直接执行在User.xml文件中映射的 SQL 语句：
+session.selectOne("com.yiibai.mybatis.models.UserMapper.getUserByID", 1)
+更简单的方法，使用合理描述参数和SQL语句返回值的接口(比如：IUser.class)，这样现在就可以不使用类似User.xml配置文件
+
+1、创建一个接口：IUser，并在其中声明对应的操作方法
+在 src 源码目录下创建一个包：com.yiibai.mybatis.dao，并建立接口类 IUser
+                  package com.yiibai.mybatis.dao;
+
+                  import org.apache.ibatis.annotations.Select;
+
+                  import com.yiibai.mybatis.models.User;
+                  /**
+                   * @author yiibai.com
+                   */
+                  public interface IUser {
+                       @Select("select * from user where id= #{id}")
+                       public User getUserByID(int id);
+                  }
+2、创建对应映射接口 SQL 语句
+                  创建一个文件： src/config/Configure.xml
+                  <?xml version="1.0" encoding="UTF-8"?>
+                  <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+                  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+                  <configuration>
+                      <typeAliases>
+                          <typeAlias alias="User" type="com.yiibai.mybatis.models.User" />
+                      </typeAliases>
+
+                      <environments default="development">
+                          <environment id="development">
+                              <transactionManager type="JDBC" />
+                              <dataSource type="POOLED">
+                                  <property name="driver" value="com.mysql.jdbc.Driver" />
+                                  <property name="url" value="jdbc:mysql://127.0.0.1:3306/testdb" />
+                                  <property name="username" value="root" />
+                                  <property name="password" value="123456" />
+                              </dataSource>
+                          </environment>
+                      </environments>
+
+                      <mappers>
+                          <!-- // power by http://www.yiibai.com 注释掉咯...
+                          <mapper resource="com/yiibai/mybatis/models/User.xml" />-->
+                      </mappers>
+                  </configuration>
+在包：com.yiibai.mybatis.models 下创建一个User.java 类文件
+                package com.yiibai.mybatis.models;
+
+                public class User {
+                    private int id;
+                    private String name;
+                    private String dept;
+                    private String phone;
+                    private String website;
+
+                    public String getWebsite() {
+                        return website;
+                    }
+                    public void setWebsite(String website) {
+                        this.website = website;
+                    }
+                    public int getId() {
+                        return id;
+                    }
+                    public void setId(int id) {
+                        this.id = id;
+                    }
+                    public String getName() {
+                        return name;
+                    }
+                    public void setName(String name) {
+                        this.name = name;
+                    }
+                    public String getDept() {
+                        return dept;
+                    }
+                    public void setDept(String dept) {
+                        this.dept = dept;
+                    }
+                    public String getPhone() {
+                        return phone;
+                    }
+                    public void setPhone(String phone) {
+                        this.phone = phone;
+                    }
+
+                }
+ 3、测试接口映射
+              在 src 这个目录下创建一个类：Main.java
+                  import java.io.Reader;
+                  import org.apache.ibatis.io.Resources;
+                  import org.apache.ibatis.session.SqlSession;
+                  import org.apache.ibatis.session.SqlSessionFactory;
+                  import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+                  import com.yiibai.mybatis.dao.IUser;
+                  import com.yiibai.mybatis.models.User;
+
+                  public class Main {
+                      private static SqlSessionFactory sqlSessionFactory;
+                      private static Reader reader;
+                      static {
+                          try {
+                              reader = Resources.getResourceAsReader("config/Configure.xml");
+                              sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+                              sqlSessionFactory.getConfiguration().addMapper(IUser.class);
+                          } catch (Exception e) {
+                              e.printStackTrace();
+                          }
+                      }
+
+                      public static SqlSessionFactory getSession() {
+                          return sqlSessionFactory;
+                      }
+
+                      public static void main(String[] args) {
+                          SqlSession session = sqlSessionFactory.openSession();
+                          try {
+                              IUser iuser = session.getMapper(IUser.class);
+                              User user = iuser.getUserByID(1);
+                              System.out.println("名字："+user.getName());
+                              System.out.println("所属部门："+user.getDept());
+                              System.out.println("主页："+user.getWebsite());
+                          } finally {
+                              session.close();
+                          }
+                      }
+                  }
+                  
